@@ -11,7 +11,7 @@ steps:
       username: p01
       password:
         from_secret: P01_DOCKER_PASSWORD
-      repo: p01/socat
+      repo: docker.p01.cc/p01/socat
       tags:
         - latest
       registry: docker.p01.cc
