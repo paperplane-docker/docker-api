@@ -5,24 +5,15 @@ workspace:
   path: /source
 
 steps:
-  - name: build-image
-    image: docker:dind
-    volumes:
-      - name: dockersock
-        path: /var/run/docker.sock
-      - name: dockercredentials
-        path: /root/.docker/config.json
-    commands:
-      - docker build --progress plain --compress -t docker.p01.cc/p01/socat:latest .
-      - docker push docker.p01.cc/p01/socat
-
-volumes:
-  - name: dockersock
-    host:
-      path: /var/run/docker.sock
-  - name: dockercredentials
-    host:
-      path: /root/.docker/config.json
+  - name: build
+    image: plugins/docker
+    settings:
+      username: p01
+      password:
+        from_secret: P01_DOCKER_PASSWORD
+      repo: p01/socat
+      tags:
+        - latest
 
 trigger:
   branch:
