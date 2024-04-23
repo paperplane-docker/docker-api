@@ -1,0 +1,24 @@
+kind: pipeline
+name: default
+
+workspace:
+  path: /source
+
+steps:
+  - name: build-image
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker build --progress plain --compress -t docker.p01.cc/p01/socat:latest .
+      - docker push docker.p01.cc/p01/socat
+
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
+
+trigger:
+  branch:
+    - master
