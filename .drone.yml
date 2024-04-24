@@ -5,7 +5,7 @@ workspace:
   path: /source
 
 steps:
-  - name: build
+  - name: build-p01
     image: plugins/docker
     settings:
       username: p01
@@ -15,6 +15,25 @@ steps:
       tags:
         - latest
       registry: docker.p01.cc
+
+  - name: build-official
+    image: plugins/docker
+    settings:
+      username: paperplanecc
+      password:
+        from_secret: DOCKER_PASSWORD
+      repo: paperplanecc/docker-api
+      tags:
+        - latest
+
+  - name: push-readme-official
+    image: chko/docker-pushrm:1
+    environment:
+      DOCKER_USER: paperplanecc
+      DOCKER_PASS:
+        from_secret: DOCKER_PASSWORD
+      PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
+      PUSHRM_TARGET: docker.io/paperplanecc/docker-api
 
 trigger:
   branch:
