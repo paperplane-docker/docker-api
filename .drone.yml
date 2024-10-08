@@ -4,27 +4,52 @@ name: default
 workspace:
   path: /source
 
-steps:
-  - name: build-p01
-    image: plugins/docker
-    settings:
-      username: p01
-      password:
-        from_secret: P01_DOCKER_PASSWORD
-      repo: docker.p01.cc/docker-api
-      tags:
-        - latest
-      registry: docker.p01.cc
+environment:
+  COMMIT_TAG: ${DRONE_COMMIT_SHA:0:8}
+  VERSION_TAG: ${DRONE_SEMVER##v}
 
-  - name: build-official
-    image: plugins/docker
-    settings:
-      username: paperplanecc
-      password:
+steps:
+  - name: buildx
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker buildx build --platform linux/amd64,linux/arm64 --progress plain --compress -t paperplanecc/docker-api:ci .
+
+  - name: publish-official
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    environment:
+      DOCKER_PASSWORD:
         from_secret: DOCKER_PASSWORD
-      repo: paperplanecc/docker-api
-      tags:
-        - latest
+    commands:
+      - docker login -u paperplanecc -p $DOCKER_PASSWORD
+      - docker tag paperplanecc/docker-api:ci paperplanecc/docker-api:$COMMIT_TAG
+      - docker tag paperplanecc/docker-api:ci paperplanecc/docker-api:latest
+      - docker push paperplanecc/docker-api:$COMMIT_TAG
+      - docker push paperplanecc/docker-api:latest
+      - docker rmi paperplanecc/docker-api:$COMMIT_TAG
+      - docker rmi paperplanecc/docker-api:latest
+
+  - name: publish-official-version
+    image: docker:dind
+    when:
+      event:
+        - tag
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    environment:
+      DOCKER_PASSWORD:
+        from_secret: DOCKER_PASSWORD
+    commands:
+      - docker login -u paperplanecc -p $DOCKER_PASSWORD
+      - docker tag paperplanecc/docker-api:ci paperplanecc/docker-api:$VERSION_TAG
+      - docker push paperplanecc/docker-api:$VERSION_TAG
+      - docker rmi paperplanecc/docker-api:$VERSION_TAG
 
   - name: push-readme-official
     image: chko/docker-pushrm:1
@@ -35,6 +60,62 @@ steps:
       PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
       PUSHRM_TARGET: docker.io/paperplanecc/docker-api
 
+  - name: publish-p01
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    environment:
+      P01_DOCKER_PASSWORD:
+        from_secret: P01_DOCKER_PASSWORD
+    commands:
+      - docker login docker.p01.cc -u p01 -p $P01_DOCKER_PASSWORD
+      - docker tag paperplanecc/docker-api:ci docker.p01.cc/docker-api:$COMMIT_TAG
+      - docker tag paperplanecc/docker-api:ci docker.p01.cc/docker-api:latest
+      - docker push docker.p01.cc/docker-api:$COMMIT_TAG
+      - docker push docker.p01.cc/docker-api:latest
+      - docker rmi docker.p01.cc/docker-api:$COMMIT_TAG
+      - docker rmi docker.p01.cc/docker-api:latest
+
+  - name: publish-p01-version
+    image: docker:dind
+    when:
+      event:
+        - tag
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    environment:
+      P01_DOCKER_PASSWORD:
+        from_secret: P01_DOCKER_PASSWORD
+    commands:
+      - docker login docker.p01.cc -u p01 -p $P01_DOCKER_PASSWORD
+      - docker tag paperplanecc/docker-api:ci docker.p01.cc/docker-api:$VERSION_TAG
+      - docker push docker.p01.cc/docker-api:$VERSION_TAG
+      - docker rmi docker.p01.cc/docker-api:$VERSION_TAG
+
+  - name: clean
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker rmi paperplanecc/docker-api:ci
+
+  - name: clean
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker rmi paperplanecc/docker-api:ci
+
 trigger:
-  branch:
-    - master
+  ref:
+    - refs/heads/master
+    - refs/tags/*
+
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
