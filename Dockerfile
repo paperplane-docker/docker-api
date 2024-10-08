@@ -4,6 +4,4 @@ RUN apk --update add socat
 
 EXPOSE 2375
 
-ENTRYPOINT ["socat"]
-
-CMD ["TCP-LISTEN:2375,fork UNIX-CONNECT:/var/run/docker.sock"]
+CMD ["socat TCP-LISTEN:2375,fork UNIX-CONNECT:/var/run/docker.sock"]
