@@ -102,14 +102,6 @@ steps:
     commands:
       - docker rmi paperplanecc/docker-api:ci
 
-  - name: clean
-    image: docker:dind
-    volumes:
-      - name: dockersock
-        path: /var/run/docker.sock
-    commands:
-      - docker rmi paperplanecc/docker-api:ci
-
 trigger:
   ref:
     - refs/heads/master
