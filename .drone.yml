@@ -11,10 +11,6 @@ environment:
   OFFICIAL_PREFIX: paperplanecc
   P01_PREFIX: docker.p01.cc
   P01_USERNAME: p01
-  DOCKER_PASSWORD:
-    from_secret: DOCKER_PASSWORD
-  P01_DOCKER_PASSWORD:
-    from_secret: P01_DOCKER_PASSWORD
 
 steps:
   - name: buildx
@@ -30,6 +26,9 @@ steps:
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
+    environment:
+      P01_DOCKER_PASSWORD:
+        from_secret: P01_DOCKER_PASSWORD
     commands:
       - docker login $P01_PREFIX -u $P01_USERNAME -p $P01_DOCKER_PASSWORD
       - docker tag $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG $P01_PREFIX/$IMAGE_NAME:latest
@@ -44,6 +43,9 @@ steps:
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
+    environment:
+      P01_DOCKER_PASSWORD:
+        from_secret: P01_DOCKER_PASSWORD
     commands:
       - docker login $P01_PREFIX -u $P01_USERNAME -p $P01_DOCKER_PASSWORD
       - docker tag $P01_PREFIX/$IMAGE_NAME:ci $P01_PREFIX/$IMAGE_NAME:$VERSION_TAG
@@ -54,6 +56,9 @@ steps:
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
+    environment:
+      DOCKER_PASSWORD:
+        from_secret: DOCKER_PASSWORD
     commands:
       - docker login -u $OFFICIAL_PREFIX -p $DOCKER_PASSWORD
       - docker tag $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG $OFFICIAL_PREFIX/$IMAGE_NAME:$COMMIT_TAG
@@ -69,6 +74,9 @@ steps:
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
+    environment:
+      DOCKER_PASSWORD:
+        from_secret: DOCKER_PASSWORD
     commands:
       - docker login -u $OFFICIAL_PREFIX -p $DOCKER_PASSWORD
       - docker tag $OFFICIAL_PREFIX/$IMAGE_NAME:$COMMIT_TAG  $OFFICIAL_PREFIX/$IMAGE_NAME:$VERSION_TAG
@@ -78,7 +86,8 @@ steps:
     image: chko/docker-pushrm:1
     environment:
       DOCKER_USER: $OFFICIAL_PREFIX
-      DOCKER_PASS: $DOCKER_PASSWORD
+      DOCKER_PASS:
+        from_secret: DOCKER_PASSWORD
       PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
       PUSHRM_TARGET: docker.io/$OFFICIAL_PREFIX/$IMAGE_NAME
 
