@@ -22,14 +22,13 @@
 docker pull paperplanecc/docker-api
 ```
 
-部署：
+运行：
 
 ```yaml
 services:
   docker-api:
-    image: paperplanecc/docker-api
+    image: paperplanecc/docker-api:latest
     container_name: docker-api
-    restart: always
     ports:
       - '2375:2375'
     volumes:
