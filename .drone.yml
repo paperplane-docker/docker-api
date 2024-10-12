@@ -6,6 +6,7 @@ workspace:
 
 environment:
   IMAGE_NAME: docker-api
+  PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
   COMMIT_TAG: ${DRONE_COMMIT_SHA:0:8}
   VERSION_TAG: ${DRONE_SEMVER##v}
   OFFICIAL_PREFIX: paperplanecc
@@ -85,11 +86,12 @@ steps:
   - name: publish-official-readme
     image: chko/docker-pushrm:1
     environment:
-      DOCKER_USER: $OFFICIAL_PREFIX
       DOCKER_PASS:
         from_secret: DOCKER_PASSWORD
-      PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
       PUSHRM_TARGET: docker.io/$OFFICIAL_PREFIX/$IMAGE_NAME
+    commands:
+      - export DOCKER_USER="$OFFICIAL_PREFIX" 
+      - /docker-pushrm.sh
 
   - name: clean-p01
     image: docker:dind
