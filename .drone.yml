@@ -49,7 +49,7 @@ steps:
         from_secret: P01_DOCKER_PASSWORD
     commands:
       - docker login $P01_PREFIX -u $P01_USERNAME -p $P01_DOCKER_PASSWORD
-      - docker tag $P01_PREFIX/$IMAGE_NAME:ci $P01_PREFIX/$IMAGE_NAME:$VERSION_TAG
+      - docker tag $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG $P01_PREFIX/$IMAGE_NAME:$VERSION_TAG
       - docker push $P01_PREFIX/$IMAGE_NAME:$VERSION_TAG
 
   - name: publish-official
