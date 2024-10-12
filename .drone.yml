@@ -10,7 +10,6 @@ environment:
   COMMIT_TAG: ${DRONE_COMMIT_SHA:0:8}
   VERSION_TAG: ${DRONE_SEMVER##v}
   OFFICIAL_PREFIX: paperplanecc
-  DOCKER_USER: paperplanecc
   P01_PREFIX: docker.p01.cc
   P01_USERNAME: p01
 
@@ -87,9 +86,13 @@ steps:
   - name: publish-official-readme
     image: chko/docker-pushrm:1
     environment:
-      DOCKER_PASS:
+      DOCKER_PASSWORD:
         from_secret: DOCKER_PASSWORD
-      PUSHRM_TARGET: docker.io/$OFFICIAL_PREFIX/$IMAGE_NAME
+    commands:
+      - export DOCKER_USER="$OFFICIAL_PREFIX"
+      - export DOCKER_PASS="$DOCKER_PASSWORD"
+      - export PUSHRM_TARGET="docker.io/$OFFICIAL_PREFIX/$IMAGE_NAME"
+      - /docker-pushrm
 
   - name: clean-p01
     image: docker:dind
