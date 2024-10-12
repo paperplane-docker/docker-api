@@ -5,8 +5,16 @@ workspace:
   path: /source
 
 environment:
+  IMAGE_NAME: docker-api
   COMMIT_TAG: ${DRONE_COMMIT_SHA:0:8}
   VERSION_TAG: ${DRONE_SEMVER##v}
+  OFFICIAL_PREFIX: paperplanecc
+  P01_PREFIX: docker.p01.cc
+  P01_USERNAME: p01
+  DOCKER_PASSWORD:
+    from_secret: DOCKER_PASSWORD
+  P01_DOCKER_PASSWORD:
+    from_secret: P01_DOCKER_PASSWORD
 
 steps:
   - name: buildx
@@ -15,67 +23,18 @@ steps:
       - name: dockersock
         path: /var/run/docker.sock
     commands:
-      - docker buildx build --platform linux/amd64,linux/arm64 --progress plain --compress -t paperplanecc/docker-api:ci .
-
-  - name: publish-official
-    image: docker:dind
-    volumes:
-      - name: dockersock
-        path: /var/run/docker.sock
-    environment:
-      DOCKER_PASSWORD:
-        from_secret: DOCKER_PASSWORD
-    commands:
-      - docker login -u paperplanecc -p $DOCKER_PASSWORD
-      - docker tag paperplanecc/docker-api:ci paperplanecc/docker-api:$COMMIT_TAG
-      - docker tag paperplanecc/docker-api:ci paperplanecc/docker-api:latest
-      - docker push paperplanecc/docker-api:$COMMIT_TAG
-      - docker push paperplanecc/docker-api:latest
-      - docker rmi paperplanecc/docker-api:$COMMIT_TAG
-      - docker rmi paperplanecc/docker-api:latest
-
-  - name: publish-official-version
-    image: docker:dind
-    when:
-      event:
-        - tag
-    volumes:
-      - name: dockersock
-        path: /var/run/docker.sock
-    environment:
-      DOCKER_PASSWORD:
-        from_secret: DOCKER_PASSWORD
-    commands:
-      - docker login -u paperplanecc -p $DOCKER_PASSWORD
-      - docker tag paperplanecc/docker-api:ci paperplanecc/docker-api:$VERSION_TAG
-      - docker push paperplanecc/docker-api:$VERSION_TAG
-      - docker rmi paperplanecc/docker-api:$VERSION_TAG
-
-  - name: push-readme-official
-    image: chko/docker-pushrm:1
-    environment:
-      DOCKER_USER: paperplanecc
-      DOCKER_PASS:
-        from_secret: DOCKER_PASSWORD
-      PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
-      PUSHRM_TARGET: docker.io/paperplanecc/docker-api
+      - docker buildx build --platform linux/amd64,linux/arm64 --progress plain --compress -t $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG .
 
   - name: publish-p01
     image: docker:dind
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
-    environment:
-      P01_DOCKER_PASSWORD:
-        from_secret: P01_DOCKER_PASSWORD
     commands:
-      - docker login docker.p01.cc -u p01 -p $P01_DOCKER_PASSWORD
-      - docker tag paperplanecc/docker-api:ci docker.p01.cc/docker-api:$COMMIT_TAG
-      - docker tag paperplanecc/docker-api:ci docker.p01.cc/docker-api:latest
-      - docker push docker.p01.cc/docker-api:$COMMIT_TAG
-      - docker push docker.p01.cc/docker-api:latest
-      - docker rmi docker.p01.cc/docker-api:$COMMIT_TAG
-      - docker rmi docker.p01.cc/docker-api:latest
+      - docker login $P01_PREFIX -u $P01_USERNAME -p $P01_DOCKER_PASSWORD
+      - docker tag $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG $P01_PREFIX/$IMAGE_NAME:latest
+      - docker push $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG
+      - docker push $P01_PREFIX/$IMAGE_NAME:latest
 
   - name: publish-p01-version
     image: docker:dind
@@ -85,22 +44,101 @@ steps:
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
-    environment:
-      P01_DOCKER_PASSWORD:
-        from_secret: P01_DOCKER_PASSWORD
     commands:
-      - docker login docker.p01.cc -u p01 -p $P01_DOCKER_PASSWORD
-      - docker tag paperplanecc/docker-api:ci docker.p01.cc/docker-api:$VERSION_TAG
-      - docker push docker.p01.cc/docker-api:$VERSION_TAG
-      - docker rmi docker.p01.cc/docker-api:$VERSION_TAG
+      - docker login $P01_PREFIX -u $P01_USERNAME -p $P01_DOCKER_PASSWORD
+      - docker tag $P01_PREFIX/$IMAGE_NAME:ci $P01_PREFIX/$IMAGE_NAME:$VERSION_TAG
+      - docker push $P01_PREFIX/$IMAGE_NAME:$VERSION_TAG
 
-  - name: clean
+  - name: publish-official
     image: docker:dind
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
     commands:
-      - docker rmi paperplanecc/docker-api:ci
+      - docker login -u $OFFICIAL_PREFIX -p $DOCKER_PASSWORD
+      - docker tag $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG $OFFICIAL_PREFIX/$IMAGE_NAME:$COMMIT_TAG
+      - docker tag $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG $OFFICIAL_PREFIX/$IMAGE_NAME:latest
+      - docker push $OFFICIAL_PREFIX/$IMAGE_NAME:$COMMIT_TAG
+      - docker push $OFFICIAL_PREFIX/$IMAGE_NAME:latest
+
+  - name: publish-official-version
+    image: docker:dind
+    when:
+      event:
+        - tag
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker login -u $OFFICIAL_PREFIX -p $DOCKER_PASSWORD
+      - docker tag $OFFICIAL_PREFIX/$IMAGE_NAME:$COMMIT_TAG  $OFFICIAL_PREFIX/$IMAGE_NAME:$VERSION_TAG
+      - docker push $OFFICIAL_PREFIX/$IMAGE_NAME:$VERSION_TAG
+
+  - name: publish-official-readme
+    image: chko/docker-pushrm:1
+    environment:
+      DOCKER_USER: $OFFICIAL_PREFIX
+      DOCKER_PASS: $DOCKER_PASSWORD
+      PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
+      PUSHRM_TARGET: docker.io/$OFFICIAL_PREFIX/$IMAGE_NAME
+
+  - name: clean-p01
+    image: docker:dind
+    failure: ignore
+    when:
+      status:
+        - success
+        - failure
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker rmi $P01_PREFIX/$IMAGE_NAME:$COMMIT_TAG
+      - docker rmi $P01_PREFIX/$IMAGE_NAME:latest
+
+  - name: clean-p01-version
+    image: docker:dind
+    failure: ignore
+    when:
+      event:
+        - tag
+      status:
+        - success
+        - failure
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker rmi $P01_PREFIX/$IMAGE_NAME:$VERSION_TAG
+
+  - name: clean-official
+    image: docker:dind
+    failure: ignore
+    when:
+      status:
+        - success
+        - failure
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker rmi $OFFICIAL_PREFIX/$IMAGE_NAME:$COMMIT_TAG
+      - docker rmi $OFFICIAL_PREFIX/$IMAGE_NAME:latest
+
+  - name: clean-official-version
+    image: docker:dind
+    failure: ignore
+    when:
+      event:
+        - tag
+      status:
+        - success
+        - failure
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker rmi $OFFICIAL_PREFIX/$IMAGE_NAME:$VERSION_TAG
 
 trigger:
   ref:
