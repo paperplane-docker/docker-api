@@ -91,7 +91,7 @@ steps:
       PUSHRM_TARGET: docker.io/$OFFICIAL_PREFIX/$IMAGE_NAME
     commands:
       - export DOCKER_USER="$OFFICIAL_PREFIX" 
-      - /docker-pushrm.sh
+      - /docker-pushrm
 
   - name: clean-p01
     image: docker:dind
