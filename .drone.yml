@@ -11,8 +11,10 @@ environment:
   P01_USERNAME: p01
 
 trigger:
-  event: [tag]
-  ref: [refs/heads/main]
+  event:
+    - tag
+  ref:
+    - refs/tags/v*
 
 volumes:
   - name: dockersock
