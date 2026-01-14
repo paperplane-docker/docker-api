@@ -9,7 +9,7 @@ environment:
   PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
   COMMIT_TAG: ${DRONE_COMMIT_SHA:0:8}
   VERSION_TAG: ${DRONE_SEMVER##v}
-  OFFICIAL_PREFIX: paperplanecc
+  OFFICIAL_PREFIX: chiskat
   P01_PREFIX: docker.p01.cc
   P01_USERNAME: p01
 
