@@ -1,6 +1,6 @@
 FROM alpine:3.23.2
 
-RUN apk --update add socat
+RUN apk add --no-cache socat
 
 EXPOSE 2375
 
