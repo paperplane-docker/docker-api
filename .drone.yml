@@ -1,9 +1,6 @@
 kind: pipeline
 name: default
 
-workspace:
-  path: /source
-
 environment:
   IMAGE_NAME: docker-api
   PUSHRM_SHORT: Accessing the Docker Engine API by mounting docker.sock
@@ -12,6 +9,18 @@ environment:
   OFFICIAL_PREFIX: chiskat
   P01_PREFIX: docker.p01.cc
   P01_USERNAME: p01
+
+trigger:
+  event: [tag]
+  ref: [refs/heads/main]
+
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
+
+workspace:
+  path: /source
 
 steps:
   - name: buildx
@@ -39,8 +48,7 @@ steps:
   - name: publish-p01-version
     image: docker:dind
     when:
-      event:
-        - tag
+      event: [tag]
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
@@ -70,8 +78,7 @@ steps:
   - name: publish-official-version
     image: docker:dind
     when:
-      event:
-        - tag
+      event: [tag]
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
@@ -98,9 +105,7 @@ steps:
     image: docker:dind
     failure: ignore
     when:
-      status:
-        - success
-        - failure
+      status: [success, failure]
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
@@ -112,11 +117,8 @@ steps:
     image: docker:dind
     failure: ignore
     when:
-      event:
-        - tag
-      status:
-        - success
-        - failure
+      event: [tag]
+      status: [success, failure]
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
@@ -127,9 +129,7 @@ steps:
     image: docker:dind
     failure: ignore
     when:
-      status:
-        - success
-        - failure
+      status: [success, failure]
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
@@ -141,23 +141,10 @@ steps:
     image: docker:dind
     failure: ignore
     when:
-      event:
-        - tag
-      status:
-        - success
-        - failure
+      event: [tag]
+      status: [success, failure]
     volumes:
       - name: dockersock
         path: /var/run/docker.sock
     commands:
       - docker rmi $OFFICIAL_PREFIX/$IMAGE_NAME:$VERSION_TAG
-
-trigger:
-  ref:
-    - refs/heads/master
-    - refs/tags/*
-
-volumes:
-  - name: dockersock
-    host:
-      path: /var/run/docker.sock
